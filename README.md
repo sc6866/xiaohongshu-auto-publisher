@@ -35,6 +35,31 @@ docker compose -f docker-compose.deploy.yml pull
 docker compose -f docker-compose.deploy.yml up -d
 ```
 
+## 一键部署脚本
+
+仓库里已经带了两个 PowerShell 脚本：
+
+- [scripts/bootstrap-deploy.ps1](/c:/Users/Administrator/Desktop/xiaohongshu/scripts/bootstrap-deploy.ps1)
+- [scripts/deploy.ps1](/c:/Users/Administrator/Desktop/xiaohongshu/scripts/deploy.ps1)
+
+如果目标机器还没有代码，可以直接执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap-deploy.ps1
+```
+
+如果你已经 `git clone` 过仓库，只需要执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1
+```
+
+如果还要一起启 Cloudflare Tunnel：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1 -WithTunnel
+```
+
 ## 没有公网 IP 怎么外网访问
 
 推荐直接走 Cloudflare Tunnel。

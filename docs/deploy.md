@@ -65,6 +65,43 @@ git push -u origin main
 
 ## 4. 服务器或另一台机器部署
 
+### 4.0 一键部署脚本
+
+仓库已经自带一键部署脚本：
+
+- `scripts/bootstrap-deploy.ps1`
+- `scripts/deploy.ps1`
+
+用法分两种。
+
+第一种，目标机器还没有代码：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap-deploy.ps1
+```
+
+第二种，代码已经存在，只更新并部署：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1
+```
+
+如果你希望脚本连 Cloudflare Tunnel 一起拉起：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1 -WithTunnel
+```
+
+脚本会自动做这些事：
+
+- 检查 `git` 或 `docker`
+- 自动拉取或更新 GitHub 仓库
+- 如果 `.env` 不存在，则从 `.env.example` 自动生成
+- 检查必要的 API Key 是否已经填写
+- 调用 `docker compose -f docker-compose.deploy.yml pull`
+- 调用 `docker compose -f docker-compose.deploy.yml up -d`
+- 可选同时启动 `cloudflared`
+
 ### 4.1 准备 `.env`
 
 复制一份：
