@@ -1,249 +1,149 @@
 # 部署说明
 
-## 推荐方案
+## 推荐路线
 
-你现在没有公网 IP，最适合的线上方案是：
+根据你的环境，推荐两条路线：
 
-`GitHub 仓库 -> GHCR 镜像 -> Docker 部署 -> Cloudflare Tunnel 外网访问`
+1. 有域名 + 有 Linux VPS：
+   `GitHub -> GHCR -> Linux VPS -> Docker -> Nginx -> 域名`
+2. 没有公网 IP：
+   `GitHub -> GHCR -> Docker -> Cloudflare Tunnel`
 
-这套方案的优点是：
+如果你已经有域名和 VPS，优先使用第 1 条，不需要把外网访问继续建立在 Tunnel 上。
 
-- 不需要公网 IP
-- 不需要自己维护复杂反代穿透
-- 手机和外网都能直接访问 Web 控制台
-- 后面换机器时只要 `git pull` 或 `docker compose pull` 就能迁移
+## 一、Linux VPS 一键部署
 
-## 架构说明
+### 1. 前提
 
-推荐按下面的职责拆分：
+- 域名已经解析到 VPS 公网 IP
+- VPS 为 Debian/Ubuntu 系 Linux
+- 你有 sudo 权限
+- 你知道要填写的 `XHS_MCP_BASE_URL`
 
-- `app` 容器：运行主应用、Web 控制台、内容生成、数据库
-- `cloudflared` 容器：把本机 `app:8787` 暴露到外网
-- Windows 宿主机：继续运行已经登录的小红书 MCP 程序
+### 2. 一条命令启动
 
-也就是说，真实发布链路仍然依赖宿主机上已登录的 `xiaohongshu-mcp-windows-amd64.exe`。
-
-## 1. GitHub 与镜像发布
-
-项目里已经加好了：
-
-- `.github/workflows/docker-publish.yml`
-
-当你把仓库推到 GitHub 的 `main` 分支后，GitHub Actions 会自动构建镜像并推送到：
-
-`ghcr.io/sc6866/xiaohongshu-auto-publisher:latest`
-
-## 2. 先清理本地敏感配置
-
-为了安全推仓库，项目已经做了这些处理：
-
-- `config/settings.yaml` 已改成可公开版本
-- `config/settings.local.yaml` 用来放本机私有账号信息
-- `.gitignore` 已忽略 `config/settings.local.yaml`、数据库、日志、上传内容
-
-你需要确认不要把下面这些文件提交上去：
-
-- `config/settings.local.yaml`
-- `.env`
-- `data/`
-- `logs/`
-
-## 3. 本地 GitHub 推送
-
-如果你准备把当前目录变成 Git 仓库，可以这样做：
-
-```powershell
-git init
-git add .
-git commit -m "init xiaohongshu automation project"
-git branch -M main
-git remote add origin https://github.com/sc6866/xiaohongshu-auto-publisher.git
-git push -u origin main
+```bash
+curl -fsSL https://raw.githubusercontent.com/sc6866/xiaohongshu-auto-publisher/main/scripts/bootstrap-vps.sh | bash
 ```
 
-推上去以后，等 GitHub Actions 跑完，就会生成 GHCR 镜像。
+### 3. 这个脚本会做什么
 
-## 4. 服务器或另一台机器部署
+仓库中的 VPS 脚本：
 
-### 4.0 一键部署脚本
+- `scripts/bootstrap-vps.sh`
+- `scripts/deploy-vps.sh`
+- `scripts/setup-env-vps.sh`
 
-仓库已经自带一键部署脚本：
+它们会自动完成：
 
-- `scripts/bootstrap-deploy.ps1`
-- `scripts/deploy.ps1`
-- `scripts/setup-env.ps1`
+- 克隆或更新仓库到 `/opt/xiaohongshu-auto-publisher`
+- 交互式生成 `.env`
+- 安装 Docker
+- 安装 Nginx
+- 拉取 `ghcr.io/sc6866/xiaohongshu-auto-publisher:latest`
+- 启动应用容器
+- 生成 Nginx 反代配置
+- 可选申请 Let's Encrypt HTTPS 证书
 
-用法分两种。
+### 4. 脚本会询问哪些内容
 
-第一种，目标机器还没有代码：
+- 域名 `APP_DOMAIN`
+- 是否启用 HTTPS
+- `SSL_EMAIL`
+- `XHS_WEB_PUBLIC_BASE_URL`
+- `XHS_MCP_BASE_URL`
+- 可选的 `XHS_PUBLISHER_USER_ID`
+- 可选的 `XHS_PUBLISHER_XSEC_TOKEN`
+- `DASHSCOPE_API_KEY`
+- `BAIDU_OCR_API_KEY`
+- `BAIDU_OCR_SECRET_KEY`
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap-deploy.ps1
+### 5. 真实发布的重要限制
+
+这一点必须说清楚：
+
+- 当前真实发布依赖“已登录的小红书 MCP”
+- 你现在的 MCP 是 Windows 可执行程序
+- 如果你的 VPS 是 Linux，它不能天然继承你本地 Windows 的登录态
+
+所以部署到 VPS 以后：
+
+- Web 控制台、内容生成、审核、封面生成可以正常跑
+- 真实发布是否可用，取决于 VPS 能不能访问一个已登录的 MCP 服务地址
+
+也就是说，`.env` 中的：
+
+```env
+XHS_MCP_BASE_URL=...
 ```
 
-第二种，代码已经存在，只更新并部署：
+必须填成 VPS 真实可访问到的 MCP 地址。否则真实发布会失败。
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1
-```
+## 二、Windows 一键部署
 
-如果你希望脚本连 Cloudflare Tunnel 一起拉起：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1 -WithTunnel
-```
-
-脚本会自动做这些事：
-
-- 检查 `git` 或 `docker`
-- 自动拉取或更新 GitHub 仓库
-- 如果 `.env` 不存在，则自动进入交互式配置
-- 检查必要的 API Key 是否已经填写
-- 调用 `docker compose -f docker-compose.deploy.yml pull`
-- 调用 `docker compose -f docker-compose.deploy.yml up -d`
-- 可选同时启动 `cloudflared`
-
-如果你希望“新机器第一次部署”直接一条命令完成，推荐这一条：
+如果目标机器是 Windows，可以直接使用：
 
 ```powershell
 git clone https://github.com/sc6866/xiaohongshu-auto-publisher.git $env:USERPROFILE\deploy\xiaohongshu-auto-publisher; cd $env:USERPROFILE\deploy\xiaohongshu-auto-publisher; powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1 -WithTunnel
 ```
 
-运行到 `.env` 阶段时，脚本会自动逐项询问：
+相关脚本：
 
-- DASHSCOPE API Key
-- 百度 OCR API Key
-- 百度 OCR Secret Key
-- Cloudflare Tunnel Token
+- `scripts/bootstrap-deploy.ps1`
+- `scripts/deploy.ps1`
+- `scripts/setup-env.ps1`
+
+## 三、环境变量模板
+
+环境变量模板见：
+
+- `.env.example`
+
+里面已经区分了：
+
+- 镜像与基础服务
+- VPS 域名与 HTTPS
+- 外网访问地址
 - MCP 地址
-- 可选的 `user_id / xsec_token`
+- 账号绑定信息
+- 通义千问与百度 OCR
+- Cloudflare Tunnel
 
-### 4.1 准备 `.env`
+## 四、GHCR 镜像
 
-复制一份：
+GitHub Actions 已接通，推送到 `main` 后会自动发布镜像到：
 
-```powershell
-Copy-Item .env.example .env
+```text
+ghcr.io/sc6866/xiaohongshu-auto-publisher:latest
 ```
 
-然后填写这些变量：
+## 五、Nginx
 
-```env
-XHS_APP_IMAGE=ghcr.io/sc6866/xiaohongshu-auto-publisher:latest
-XHS_WEB_PUBLIC_BASE_URL=https://xhs.你的域名.com
-XHS_MCP_BASE_URL=http://host.docker.internal:18090
-XHS_MCP_AUTO_START=false
-XHS_PUBLISHER_USER_ID=
-XHS_PUBLISHER_XSEC_TOKEN=
-DASHSCOPE_API_KEY=
-BAIDU_OCR_API_KEY=
-BAIDU_OCR_SECRET_KEY=
-CF_TUNNEL_TOKEN=
+项目里保留了 Nginx 示例配置：
+
+- `config/nginx_xhs_web.conf`
+
+但对于 VPS 场景，你不需要手动改它。`deploy-vps.sh` 会自动生成并写入站点配置。
+
+## 六、常用命令
+
+VPS 后续更新部署：
+
+```bash
+cd /opt/xiaohongshu-auto-publisher
+sudo bash scripts/deploy-vps.sh --https
 ```
 
-说明：
+查看应用日志：
 
-- `XHS_MCP_BASE_URL` 指向宿主机上的小红书 MCP
-- `CF_TUNNEL_TOKEN` 是 Cloudflare Tunnel 的 token
-
-### 4.2 拉镜像部署
-
-如果你使用 GHCR 镜像部署，执行：
-
-```powershell
-docker compose -f docker-compose.deploy.yml pull
-docker compose -f docker-compose.deploy.yml up -d
-```
-
-如果还要一起启动 Cloudflare Tunnel：
-
-```powershell
-docker compose -f docker-compose.deploy.yml --profile tunnel up -d
-```
-
-## 5. Cloudflare Tunnel
-
-### 5.1 为什么推荐它
-
-因为你没有公网 IP，而 Cloudflare Tunnel 可以让外网访问你的本地服务，不需要开放入站端口。
-
-### 5.2 你要做的准备
-
-你需要：
-
-- 一个 Cloudflare 账号
-- 一个已接入 Cloudflare 的域名
-- 在 Cloudflare Zero Trust 里创建 Tunnel
-- 拿到 Tunnel Token
-
-### 5.3 这个项目里的接法
-
-项目已经在 `docker-compose.yml` 和 `docker-compose.deploy.yml` 里加好了：
-
-- `cloudflared` 服务
-- `--profile tunnel` 启动方式
-- `CF_TUNNEL_TOKEN` 环境变量注入
-
-你只需要把 Cloudflare 后台生成的 token 写进 `.env`，然后运行：
-
-```powershell
-docker compose -f docker-compose.deploy.yml --profile tunnel up -d
-```
-
-## 6. 本机继续保留的小红书 MCP
-
-这一点很重要：
-
-当前真实发布依赖 Windows 上已登录的小红书 MCP 程序，所以 Docker 不是替代它，而是调用它。
-
-你需要保证宿主机上：
-
-```powershell
-http://127.0.0.1:18090/health
-```
-
-可以正常返回健康状态。
-
-然后容器通过：
-
-`http://host.docker.internal:18090`
-
-去访问它。
-
-## 7. 健康检查与验证
-
-应用启动后可以检查：
-
-```powershell
-curl http://127.0.0.1:8787/healthz
-```
-
-如果 Cloudflare Tunnel 正常，外网域名也应该能打开控制台。
-
-## 8. 常用命令
-
-本地构建运行：
-
-```powershell
-docker compose up -d --build
-```
-
-GHCR 镜像部署：
-
-```powershell
-docker compose -f docker-compose.deploy.yml pull
-docker compose -f docker-compose.deploy.yml up -d
-```
-
-查看日志：
-
-```powershell
-docker compose logs -f app
+```bash
+cd /opt/xiaohongshu-auto-publisher
 docker compose -f docker-compose.deploy.yml logs -f app
-docker compose -f docker-compose.deploy.yml logs -f cloudflared
 ```
 
-## 9. 参考文档
+查看容器状态：
 
-- Cloudflare Tunnel Docker: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deploy-tunnels/deployment-guides/docker/
-- GitHub Container Registry: https://docs.github.com/packages/working-with-a-github-packages-registry/working-with-the-container-registry
+```bash
+cd /opt/xiaohongshu-auto-publisher
+docker compose -f docker-compose.deploy.yml ps
+```
