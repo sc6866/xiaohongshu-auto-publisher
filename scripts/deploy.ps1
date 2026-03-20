@@ -50,6 +50,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $envExamplePath = Join-Path $repoRoot ".env.example"
 $envPath = Join-Path $repoRoot ".env"
 $composeFile = Join-Path $repoRoot "docker-compose.deploy.yml"
+$setupEnvScript = Join-Path $PSScriptRoot "setup-env.ps1"
 
 Require-Command "docker"
 
@@ -58,13 +59,16 @@ if (-not (Test-Path $composeFile)) {
 }
 
 if (-not (Test-Path $envPath)) {
-    if (-not (Test-Path $envExamplePath)) {
-        throw "Missing env template: $envExamplePath"
+    if (Test-Path $setupEnvScript) {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $setupEnvScript -EnvPath $envPath
+    } elseif (Test-Path $envExamplePath) {
+        Copy-Item $envExamplePath $envPath
+        Write-Host "Created .env from .env.example. Please fill in the required keys, then rerun the script." -ForegroundColor Yellow
+        Write-Host "Path: $envPath"
+        exit 1
+    } else {
+        throw "Missing env template and setup script."
     }
-    Copy-Item $envExamplePath $envPath
-    Write-Host "Created .env from .env.example. Please fill in the required keys, then rerun the script." -ForegroundColor Yellow
-    Write-Host "Path: $envPath"
-    exit 1
 }
 
 $envValues = Read-DotEnv -Path $envPath
@@ -85,10 +89,24 @@ foreach ($key in $requiredKeys) {
 }
 
 if ($missing.Count -gt 0) {
-    Write-Host "Please fill these variables in .env before deployment:" -ForegroundColor Yellow
+    Write-Host "Missing required values in .env:" -ForegroundColor Yellow
     $missing | ForEach-Object { Write-Host " - $_" -ForegroundColor Yellow }
-    Write-Host "Env file: $envPath"
-    exit 1
+    if (Test-Path $setupEnvScript) {
+        if ((Read-Host "Do you want to run interactive env setup now? [Y/n]").Trim().ToLower() -notin @("n", "no")) {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $setupEnvScript -EnvPath $envPath
+            $envValues = Read-DotEnv -Path $envPath
+            $missing = @()
+            foreach ($key in $requiredKeys) {
+                if (-not $envValues.ContainsKey($key) -or [string]::IsNullOrWhiteSpace($envValues[$key])) {
+                    $missing += $key
+                }
+            }
+        }
+    }
+    if ($missing.Count -gt 0) {
+        Write-Host "Env file: $envPath"
+        exit 1
+    }
 }
 
 Write-Step "Pulling latest image"

@@ -41,6 +41,7 @@ docker compose -f docker-compose.deploy.yml up -d
 
 - [scripts/bootstrap-deploy.ps1](/c:/Users/Administrator/Desktop/xiaohongshu/scripts/bootstrap-deploy.ps1)
 - [scripts/deploy.ps1](/c:/Users/Administrator/Desktop/xiaohongshu/scripts/deploy.ps1)
+- [scripts/setup-env.ps1](/c:/Users/Administrator/Desktop/xiaohongshu/scripts/setup-env.ps1)
 
 如果目标机器还没有代码，可以直接执行：
 
@@ -59,6 +60,19 @@ powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1 -WithTunnel
 ```
+
+如果你想要“新机器第一次就一条命令跑到底”，推荐直接用这一条：
+
+```powershell
+git clone https://github.com/sc6866/xiaohongshu-auto-publisher.git $env:USERPROFILE\deploy\xiaohongshu-auto-publisher; cd $env:USERPROFILE\deploy\xiaohongshu-auto-publisher; powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1 -WithTunnel
+```
+
+这条命令会：
+
+- 拉取仓库
+- 如果没有 `.env`，自动进入交互式填写
+- 填完后自动拉镜像并启动服务
+- 同时启动 Cloudflare Tunnel
 
 ## 没有公网 IP 怎么外网访问
 

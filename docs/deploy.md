@@ -71,6 +71,7 @@ git push -u origin main
 
 - `scripts/bootstrap-deploy.ps1`
 - `scripts/deploy.ps1`
+- `scripts/setup-env.ps1`
 
 用法分两种。
 
@@ -96,11 +97,26 @@ powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1 -WithTunnel
 
 - 检查 `git` 或 `docker`
 - 自动拉取或更新 GitHub 仓库
-- 如果 `.env` 不存在，则从 `.env.example` 自动生成
+- 如果 `.env` 不存在，则自动进入交互式配置
 - 检查必要的 API Key 是否已经填写
 - 调用 `docker compose -f docker-compose.deploy.yml pull`
 - 调用 `docker compose -f docker-compose.deploy.yml up -d`
 - 可选同时启动 `cloudflared`
+
+如果你希望“新机器第一次部署”直接一条命令完成，推荐这一条：
+
+```powershell
+git clone https://github.com/sc6866/xiaohongshu-auto-publisher.git $env:USERPROFILE\deploy\xiaohongshu-auto-publisher; cd $env:USERPROFILE\deploy\xiaohongshu-auto-publisher; powershell -ExecutionPolicy Bypass -File .\scripts\deploy.ps1 -WithTunnel
+```
+
+运行到 `.env` 阶段时，脚本会自动逐项询问：
+
+- DASHSCOPE API Key
+- 百度 OCR API Key
+- 百度 OCR Secret Key
+- Cloudflare Tunnel Token
+- MCP 地址
+- 可选的 `user_id / xsec_token`
 
 ### 4.1 准备 `.env`
 
