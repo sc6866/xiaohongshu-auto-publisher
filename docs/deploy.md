@@ -31,7 +31,7 @@
 
 当你把仓库推到 GitHub 的 `main` 分支后，GitHub Actions 会自动构建镜像并推送到：
 
-`ghcr.io/<你的 GitHub 用户名>/<仓库名>:latest`
+`ghcr.io/sc6866/xiaohongshu-auto-publisher:latest`
 
 ## 2. 先清理本地敏感配置
 
@@ -57,7 +57,7 @@ git init
 git add .
 git commit -m "init xiaohongshu automation project"
 git branch -M main
-git remote add origin https://github.com/<你的用户名>/<仓库名>.git
+git remote add origin https://github.com/sc6866/xiaohongshu-auto-publisher.git
 git push -u origin main
 ```
 
@@ -76,7 +76,7 @@ Copy-Item .env.example .env
 然后填写这些变量：
 
 ```env
-XHS_APP_IMAGE=ghcr.io/你的用户名/你的仓库名:latest
+XHS_APP_IMAGE=ghcr.io/sc6866/xiaohongshu-auto-publisher:latest
 XHS_WEB_PUBLIC_BASE_URL=https://xhs.你的域名.com
 XHS_MCP_BASE_URL=http://host.docker.internal:18090
 XHS_MCP_AUTO_START=false

@@ -59,6 +59,14 @@ docker compose -f docker-compose.deploy.yml --profile tunnel up -d
 
 推送到 `main` 后会自动发布 GHCR 镜像。
 
+当前仓库地址：
+
+- `https://github.com/sc6866/xiaohongshu-auto-publisher`
+
+默认镜像地址：
+
+- `ghcr.io/sc6866/xiaohongshu-auto-publisher:latest`
+
 ## 敏感配置
 
 为了便于推 GitHub：
