@@ -1,0 +1,4 @@
+interface:
+  display_name: "Xiaohongshu Growth Playbook"
+  short_description: "Rules for bold Xiaohongshu covers and high-CTR note structure."
+  default_prompt: "Use this skill to shape Xiaohongshu cover strategy and note structure before generating content."

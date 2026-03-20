@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xiaohongshu-auto-publisher"
+version = "0.1.0"
+description = "A runnable first version of an automated Xiaohongshu content pipeline."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "apscheduler>=3.10.4",
+  "PyYAML>=6.0.2",
+  "playwright>=1.52.0",
+]
+
+[project.scripts]
+xhs-auto = "main:main"
+
+[tool.setuptools.packages.find]
+include = ["agents*", "common*", "scheduler*", "skills*", "webui*"]

@@ -1,0 +1,16 @@
+jobs:
+  - name: "trend_scan"
+    schedule: "0 */2 * * *"
+    agent: "TrendScanner"
+
+  - name: "content_production"
+    schedule: "0 8,12,18 * * *"
+    agent: "ContentGenerator"
+
+  - name: "publish_queue"
+    schedule: "0 9,13,19 * * *"
+    agent: "PublishManager"
+
+  - name: "data_feedback"
+    schedule: "0 10 * * *"
+    agent: "KnowledgeCurator"

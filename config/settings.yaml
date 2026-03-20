@@ -1,0 +1,120 @@
+runtime:
+  timezone: "Asia/Shanghai"
+  simulate: false
+  log_level: "INFO"
+  account_name: "default"
+
+paths:
+  data_dir: "data"
+  logs_dir: "logs"
+  db_path: "data/knowledge.db"
+  sensitive_words_path: "data/sensitive_words.txt"
+  cover_template_dir: "data/cover_templates"
+  generated_cover_dir: "data/generated_covers"
+  vector_db_dir: "data/vector_db"
+
+scanner:
+  min_heat_score: 60
+  allowed_competition:
+    - "low"
+    - "medium"
+  default_seed_topics:
+    - keyword: "租房桌面改造"
+      category: "home"
+    - keyword: "通勤早八妆容"
+      category: "beauty"
+    - keyword: "打工人午饭便当"
+      category: "food"
+    - keyword: "秋招简历避坑"
+      category: "career"
+    - keyword: "iPad学习流"
+      category: "tech"
+    - keyword: "低预算卧室氛围灯"
+      category: "home"
+    - keyword: "学生党护肤清单"
+      category: "beauty"
+
+spider:
+  samples_per_topic: 3
+  request_delay_seconds:
+    - 2
+    - 5
+
+quality:
+  originality_threshold: 70
+  max_rewrites: 3
+
+content:
+  retrieval_days: 7
+  retrieval_top_k: 5
+  max_body_length: 1000
+  default_tags:
+    - "小红书运营"
+    - "经验分享"
+    - "真实体验"
+
+publishing:
+  daily_limit: 3
+  allowed_windows:
+    - "09:00-13:00"
+    - "18:00-21:00"
+  retry_limit: 3
+  dry_run: false
+  visibility: "public"
+
+publisher_profile:
+  user_id: ""
+  xsec_token: ""
+
+cover:
+  default_template: "default"
+  enable_browser_render: false
+  aspect_ratio: "3:4"
+
+vision:
+  enabled: true
+  provider: "qwen"
+  qwen_base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  qwen_model: "qwen3-vl-plus"
+  qwen_api_key: ""
+  glm_base_url: "https://open.bigmodel.cn/api/paas/v4"
+  glm_model: "glm-4.6v-flash"
+  timeout_seconds: 90
+
+ocr:
+  enabled: true
+  provider: "baidu"
+  baidu_token_url: "https://aip.baidubce.com/oauth/2.0/token"
+  baidu_general_url: "https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic"
+  baidu_api_key: ""
+  baidu_secret_key: ""
+  timeout_seconds: 30
+
+writer:
+  enabled: true
+  provider: "qwen"
+  qwen_base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  qwen_model: "qwen-plus-latest"
+  qwen_api_key: ""
+  glm_base_url: "https://open.bigmodel.cn/api/paas/v4"
+  glm_model: "glm-4-flash"
+  timeout_seconds: 90
+
+web:
+  enabled: true
+  host: "127.0.0.1"
+  port: 8787
+  upload_dir: "data/uploads/web"
+  max_upload_mb: 20
+  public_base_url: ""
+
+xhs_mcp:
+  enabled: true
+  base_url: ""
+  auto_start: true
+  executable_path: "C:/Users/Administrator/Desktop/xiaohongshu-mcp-windows-amd64/xiaohongshu-mcp-windows-amd64.exe"
+  working_dir: "C:/Users/Administrator/Desktop/xiaohongshu-mcp-windows-amd64"
+  port: 18090
+  headless: true
+  startup_timeout_seconds: 15
+  request_timeout_seconds: 45

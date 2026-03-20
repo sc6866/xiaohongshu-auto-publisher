@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{main_title}}</title>
+    <style>
+      :root {
+        --bg: linear-gradient(180deg, #ffd38a 0%, #fff4db 100%);
+        --ink: #8c3e0e;
+        --card: rgba(255, 249, 238, 0.92);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        width: 768px;
+        height: 1024px;
+        font-family: "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      .wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
+      .shape {
+        position: absolute;
+        inset: auto 36px 40px auto;
+        width: 240px;
+        height: 240px;
+        border-radius: 36px;
+        background: rgba(255,255,255,0.25);
+        transform: rotate(16deg);
+      }
+      .card {
+        position: absolute;
+        left: 52px;
+        top: 94px;
+        width: 454px;
+        padding: 42px 34px;
+        border-radius: 34px;
+        background: var(--card);
+      }
+      h1 { margin: 0; font-size: 58px; line-height: 1.18; }
+      .sub { margin-top: 18px; font-size: 28px; }
+      .tags { position: absolute; right: 48px; top: 112px; width: 184px; display: grid; gap: 16px; }
+      .tags span { display: block; padding: 10px 16px; border-radius: 18px; background: rgba(255,255,255,0.82); font-size: 22px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap {{bg_style}}">
+      <div class="shape"></div>
+      <div class="card">
+        <h1>{{main_title}}</h1>
+        <div class="sub">{{subtitle}}</div>
+      </div>
+      <div class="tags">{{tags}}</div>
+    </div>
+  </body>
+</html>

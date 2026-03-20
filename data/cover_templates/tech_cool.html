@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{main_title}}</title>
+    <style>
+      :root {
+        --bg: radial-gradient(circle at top right, #def4ff 0%, #c4e5ff 26%, #f7fbff 100%);
+        --ink: #0d4978;
+        --card: rgba(247, 251, 255, 0.9);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        width: 768px;
+        height: 1024px;
+        font-family: "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      .grid {
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(rgba(13,73,120,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(13,73,120,0.06) 1px, transparent 1px);
+        background-size: 38px 38px;
+      }
+      .card {
+        position: absolute;
+        left: 54px;
+        top: 88px;
+        width: 438px;
+        padding: 44px 34px;
+        border-radius: 28px;
+        background: var(--card);
+        backdrop-filter: blur(10px);
+      }
+      h1 { margin: 0; font-size: 56px; line-height: 1.15; }
+      .sub { margin-top: 20px; font-size: 27px; }
+      .tags { position: absolute; right: 44px; top: 120px; width: 190px; display: grid; gap: 18px; }
+      .tags span { display: block; padding: 10px 16px; border-radius: 18px; background: rgba(255,255,255,0.86); font-size: 22px; }
+    </style>
+  </head>
+  <body>
+    <div class="grid"></div>
+    <div class="card">
+      <h1>{{main_title}}</h1>
+      <div class="sub">{{subtitle}}</div>
+    </div>
+    <div class="tags">{{tags}}</div>
+  </body>
+</html>
