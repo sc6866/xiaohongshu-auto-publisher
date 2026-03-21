@@ -20,6 +20,10 @@ def guess_mime_type(path: Path) -> str:
         return "image/webp"
     if suffix == ".gif":
         return "image/gif"
+    if suffix == ".heic":
+        return "image/heic"
+    if suffix == ".heif":
+        return "image/heif"
     return "application/octet-stream"
 
 

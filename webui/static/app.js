@@ -6,8 +6,8 @@ const state = {
   knowledgeSources: [],
 };
 
-const SUPPORTED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
-const SUPPORTED_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const SUPPORTED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".heic", ".heif"];
+const SUPPORTED_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"];
 
 async function requestJson(url, options = {}) {
   let response;
@@ -369,7 +369,7 @@ function renderGeneratedDetail(detail) {
             <div class="thumb-row">${publishPreview || '<span class="meta-inline">目前仅封面，尚未补图</span>'}</div>
           </div>
           <div class="inline-upload">
-            <input class="inline-file" type="file" data-upload-for="${escapeHtml(detail.id)}" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" multiple />
+            <input class="inline-file" type="file" data-upload-for="${escapeHtml(detail.id)}" accept="image/png,image/jpeg,image/webp,image/heic,image/heif,.png,.jpg,.jpeg,.webp,.heic,.heif" multiple />
             <button class="btn btn-small btn-secondary" data-attach-id="${escapeHtml(detail.id)}">补充发布图片</button>
           </div>
           <div class="action-row">
@@ -444,7 +444,7 @@ function bindGeneratedActions(container) {
       const unsupported = collectUnsupportedImageNames(files);
       if (unsupported.length) {
         setResult({
-          error: "当前仅支持 JPG / PNG / WEBP 补图。手机相册若是 HEIC，请先导出成 JPG 后再上传。",
+          error: "当前支持 JPG / PNG / WEBP / HEIC / HEIF。若仍上传失败，请确认图片没有损坏后重试。",
           unsupported_files: unsupported,
         });
         return;
@@ -667,7 +667,7 @@ async function init() {
     const unsupported = collectUnsupportedImageNames(files);
     if (unsupported.length) {
       setResult({
-        error: "当前图片文章仅支持 JPG / PNG / WEBP。手机相册若是 HEIC，请先导出或转换成 JPG 后再上传。",
+        error: "当前支持 JPG / PNG / WEBP / HEIC / HEIF。若仍上传失败，请确认图片没有损坏后重试。",
         unsupported_files: unsupported,
       });
       return;

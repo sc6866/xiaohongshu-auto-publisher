@@ -10,6 +10,7 @@ from PIL import Image, UnidentifiedImageError
 from agents.base import BaseAgent
 from common.baidu_ocr_client import BaiduOcrClient
 from common.glm_vision_client import GlmVisionClient
+from common.image_support import prepare_local_image_path, register_heif_support
 from common.models import ImageInsight
 from common.qwen_vision_client import QwenVisionClient
 
@@ -17,9 +18,20 @@ from common.qwen_vision_client import QwenVisionClient
 class ImageInsightAgent(BaseAgent):
     def __init__(self, settings, db, vector_store):
         super().__init__(settings, db, vector_store)
+        register_heif_support()
         self.qwen_vision_client = QwenVisionClient(settings)
         self.glm_vision_client = GlmVisionClient(settings)
         self.ocr_client = BaiduOcrClient(settings)
+
+    def prepare_image_paths(self, image_paths: list[str]) -> list[str]:
+        prepared_paths: list[str] = []
+        for item in image_paths:
+            path = self.settings.resolve_path(item) if not Path(item).is_absolute() else Path(item)
+            if not path.exists():
+                raise FileNotFoundError(f"Image not found: {path}")
+            prepared = prepare_local_image_path(path, self.settings.web_upload_dir)
+            prepared_paths.append(str(prepared))
+        return prepared_paths
 
     def analyze(self, image_paths: list[str], preferred_mode: str | None = None) -> dict[str, Any]:
         paths = [self.settings.resolve_path(path) if not Path(path).is_absolute() else Path(path) for path in image_paths]

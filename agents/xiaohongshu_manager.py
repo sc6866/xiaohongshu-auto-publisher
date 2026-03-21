@@ -131,7 +131,8 @@ class XiaohongshuManager(BaseAgent):
         )
         self.db.update_task_status(task_id, TaskStatus.PROCESSING)
         try:
-            analysis = self.image_insight_agent.analyze(image_paths=image_paths, preferred_mode=mode)
+            prepared_image_paths = self.image_insight_agent.prepare_image_paths(image_paths)
+            analysis = self.image_insight_agent.analyze(image_paths=prepared_image_paths, preferred_mode=mode)
             content = self.content_generator.generate_from_image_brief(
                 analysis,
                 angle=angle,
@@ -155,6 +156,7 @@ class XiaohongshuManager(BaseAgent):
                 self.db.update_task_status(task_id, TaskStatus.MANUAL_REVIEW, error_message="review_failed")
                 return {
                     "status": "manual_review",
+                    "prepared_image_paths": prepared_image_paths,
                     "analysis": analysis,
                     "content": content.to_dict(),
                     "review": review.to_dict(),
@@ -171,12 +173,13 @@ class XiaohongshuManager(BaseAgent):
                 scheduled_time=scheduled_time,
                 cover_image_path=cover.image_path,
                 cover_html_path=cover.html_path,
-                publish_image_paths=image_paths,
+                publish_image_paths=prepared_image_paths,
                 image_analysis=analysis,
                 generation_meta={
                     "source": "image",
                     "mode": mode or analysis.get("content_mode") or "",
                     "angle": angle or "",
+                    "original_image_paths": image_paths,
                     "style_strength": style_strength or "平衡",
                 },
             )
@@ -185,6 +188,7 @@ class XiaohongshuManager(BaseAgent):
                 "status": "approved",
                 "content_id": content_id,
                 "scheduled_time": scheduled_time,
+                "prepared_image_paths": prepared_image_paths,
                 "analysis": analysis,
                 "content": content.to_dict(),
                 "review": review.to_dict(),

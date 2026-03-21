@@ -5,7 +5,6 @@ from email.policy import default
 import json
 import mimetypes
 import threading
-import uuid
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -14,6 +13,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from agents.xiaohongshu_manager import XiaohongshuManager
 from common.config import Settings
+from common.image_support import is_supported_upload, normalize_upload_to_path
 
 
 def run_web_console(settings: Settings, host: str, port: int) -> None:
@@ -443,16 +443,18 @@ class WebConsoleApp:
         return params
 
     def _persist_uploaded_images(self, files: list[dict[str, Any]]) -> list[str]:
-        allowed = {".png", ".jpg", ".jpeg", ".webp"}
         saved_paths: list[str] = []
         for file in files:
             original = Path(str(file.get("filename") or "upload.bin"))
-            suffix = original.suffix.lower() or ".bin"
-            if suffix not in allowed:
+            content_type = str(file.get("content_type") or "").strip()
+            if not is_supported_upload(original.name, content_type):
                 continue
-            filename = f"{uuid.uuid4().hex}{suffix}"
-            target = self.upload_dir / filename
-            target.write_bytes(file.get("body", b""))
+            target = normalize_upload_to_path(
+                upload_dir=self.upload_dir,
+                filename=original.name,
+                body=file.get("body", b""),
+                content_type=content_type,
+            )
             saved_paths.append(str(target))
         return saved_paths
 
