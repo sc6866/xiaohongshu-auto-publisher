@@ -95,6 +95,14 @@ function collectUnsupportedImageNames(files) {
     .map((file) => String(file?.name || "unknown"));
 }
 
+function describeFiles(files) {
+  return Array.from(files || []).map((file) => ({
+    name: String(file?.name || ""),
+    type: String(file?.type || ""),
+    size: Number(file?.size || 0),
+  }));
+}
+
 function modeLabel(mode) {
   const mapping = {
     product_review: "真人测评",
@@ -451,7 +459,8 @@ function bindGeneratedActions(container) {
       }
       const formData = new FormData();
       formData.append("content_id", contentId);
-      files.forEach((file) => formData.append("images", file, file.name || "upload-image"));
+      files.forEach((file) => formData.append("images", file));
+      try {
       const payload = await withLoading("正在补充发布图片", "正在把你追加的图片保存到这条内容里。", () =>
         requestJson("/api/attach-publish-images", {
           method: "POST",
@@ -461,6 +470,14 @@ function bindGeneratedActions(container) {
       setResult(payload);
       await ensureGeneratedDetail(contentId, true);
       await refreshDashboard({ silent: true });
+      } catch (error) {
+        setResult({
+          error: error?.message || String(error),
+          stage: "attach_publish_images",
+          content_id: contentId,
+          files: describeFiles(files),
+        });
+      }
     });
   });
 
@@ -673,10 +690,11 @@ async function init() {
       return;
     }
     const formData = new FormData();
-    files.forEach((file) => formData.append("images", file, file.name || "upload-image"));
+    files.forEach((file) => formData.append("images", file));
     formData.append("mode", document.getElementById("mode").value);
     formData.append("angle", document.getElementById("angle").value.trim());
     formData.append("style_strength", document.getElementById("styleStrength").value);
+    try {
     const payload = await withLoading("正在分析图片并生成文章", "正在调用图片理解、OCR、文案生成和封面链路，请耐心等待。", () =>
       requestJson("/api/produce-images", {
         method: "POST",
@@ -690,6 +708,15 @@ async function init() {
     await refreshDashboard({ silent: true });
     if (payload.content_id) {
       await ensureGeneratedDetail(payload.content_id);
+    }
+    } catch (error) {
+      setResult({
+        error: error?.message || String(error),
+        stage: "produce_images",
+        endpoint: "/api/produce-images",
+        files: describeFiles(files),
+        userAgent: navigator.userAgent,
+      });
     }
   });
 

@@ -72,7 +72,7 @@ class WebConsoleApp:
                 handler,
                 self.static_dir / "app.js",
                 "application/javascript; charset=utf-8",
-                cache_control="public, max-age=300",
+                cache_control="no-store",
             )
             return
         if route == "/styles.css":
@@ -80,7 +80,7 @@ class WebConsoleApp:
                 handler,
                 self.static_dir / "styles.css",
                 "text/css; charset=utf-8",
-                cache_control="public, max-age=300",
+                cache_control="no-store",
             )
             return
         if route == "/api/dashboard":
