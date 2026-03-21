@@ -14,7 +14,8 @@ async function requestJson(url, options = {}) {
   try {
     response = await fetch(url, options);
   } catch (error) {
-    throw new Error(`请求发送失败：${error?.message || String(error)}`);
+    const message = error && error.message ? error.message : String(error);
+    throw new Error(`请求发送失败：${message}`);
   }
 
   const rawText = await response.text();
@@ -57,11 +58,11 @@ async function withLoading(title, text, task) {
 
 function escapeHtml(text) {
   return String(text || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function parseTagsInput(raw) {
@@ -77,12 +78,12 @@ function selectorEscape(value) {
   if (window.CSS && typeof window.CSS.escape === "function") {
     return window.CSS.escape(value);
   }
-  return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+  return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 function isSupportedImageFile(file) {
-  const name = String(file?.name || "").toLowerCase();
-  const type = String(file?.type || "").toLowerCase();
+  const name = String(file && file.name ? file.name : "").toLowerCase();
+  const type = String(file && file.type ? file.type : "").toLowerCase();
   return (
     SUPPORTED_IMAGE_EXTENSIONS.some((suffix) => name.endsWith(suffix)) ||
     SUPPORTED_IMAGE_MIME_TYPES.includes(type)
@@ -92,14 +93,14 @@ function isSupportedImageFile(file) {
 function collectUnsupportedImageNames(files) {
   return Array.from(files || [])
     .filter((file) => !isSupportedImageFile(file))
-    .map((file) => String(file?.name || "unknown"));
+    .map((file) => String(file && file.name ? file.name : "unknown"));
 }
 
 function describeFiles(files) {
   return Array.from(files || []).map((file) => ({
-    name: String(file?.name || ""),
-    type: String(file?.type || ""),
-    size: Number(file?.size || 0),
+    name: String(file && file.name ? file.name : ""),
+    type: String(file && file.type ? file.type : ""),
+    size: Number(file && file.size ? file.size : 0),
   }));
 }
 
@@ -444,7 +445,7 @@ function bindGeneratedActions(container) {
     button.addEventListener("click", async () => {
       const contentId = button.dataset.attachId || "";
       const input = container.querySelector(`[data-upload-for="${selectorEscape(contentId)}"]`);
-      const files = input?.files ? Array.from(input.files) : [];
+      const files = input && input.files ? Array.from(input.files) : [];
       if (!files.length) {
         setResult({ error: "请先为这条内容选择要补充的图片。" });
         return;
@@ -472,7 +473,7 @@ function bindGeneratedActions(container) {
       await refreshDashboard({ silent: true });
       } catch (error) {
         setResult({
-          error: error?.message || String(error),
+          error: (error && error.message) || String(error),
           stage: "attach_publish_images",
           content_id: contentId,
           files: describeFiles(files),
@@ -493,9 +494,9 @@ function bindGeneratedActions(container) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             content_id: contentId,
-            title: titleInput?.value || "",
-            body: bodyInput?.value || "",
-            tags: parseTagsInput(tagsInput?.value || ""),
+            title: (titleInput && titleInput.value) || "",
+            body: (bodyInput && bodyInput.value) || "",
+            tags: parseTagsInput((tagsInput && tagsInput.value) || ""),
           }),
         }),
       );
@@ -711,7 +712,7 @@ async function init() {
     }
     } catch (error) {
       setResult({
-        error: error?.message || String(error),
+        error: (error && error.message) || String(error),
         stage: "produce_images",
         endpoint: "/api/produce-images",
         files: describeFiles(files),
