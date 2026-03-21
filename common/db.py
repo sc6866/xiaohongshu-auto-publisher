@@ -23,8 +23,15 @@ class Database:
         if conn is None:
             conn = sqlite3.connect(self.path, timeout=30)
             conn.row_factory = sqlite3.Row
+            self._configure_connection(conn)
             self._local.conn = conn
         return conn
+
+    def _configure_connection(self, conn: sqlite3.Connection) -> None:
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("PRAGMA busy_timeout = 30000")
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA synchronous = NORMAL")
 
     def _init_schema(self) -> None:
         self.conn.executescript(

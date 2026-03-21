@@ -218,7 +218,11 @@ class PublishManager(BaseAgent):
 
         image_path = str(row["cover_image_path"])
         if not self._is_publishable_image(image_path):
-            return self._simulate_publish(account_name, content_id, row), "MANUAL_REVIEW", "cover_image_must_be_png_or_jpg"
+            return (
+                self._simulate_publish(account_name, content_id, row),
+                "MANUAL_REVIEW",
+                "cover_image_must_be_png_jpg_or_webp",
+            )
 
         tags = self._load_tags(row.get("tags_json"))
         publish_images = self._collect_publish_images(row)
