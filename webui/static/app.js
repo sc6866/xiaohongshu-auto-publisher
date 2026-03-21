@@ -6,9 +6,26 @@ const state = {
   knowledgeSources: [],
 };
 
+const SUPPORTED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
+const SUPPORTED_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, options);
-  const payload = await response.json();
+  let response;
+  try {
+    response = await fetch(url, options);
+  } catch (error) {
+    throw new Error(`请求发送失败：${error?.message || String(error)}`);
+  }
+
+  const rawText = await response.text();
+  let payload = {};
+  if (rawText.trim()) {
+    try {
+      payload = JSON.parse(rawText);
+    } catch (error) {
+      throw new Error(rawText.slice(0, 200) || `服务器返回了无法解析的数据 (${response.status})`);
+    }
+  }
   if (!response.ok) {
     throw new Error(payload.error || `Request failed: ${response.status}`);
   }
@@ -61,6 +78,21 @@ function selectorEscape(value) {
     return window.CSS.escape(value);
   }
   return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+}
+
+function isSupportedImageFile(file) {
+  const name = String(file?.name || "").toLowerCase();
+  const type = String(file?.type || "").toLowerCase();
+  return (
+    SUPPORTED_IMAGE_EXTENSIONS.some((suffix) => name.endsWith(suffix)) ||
+    SUPPORTED_IMAGE_MIME_TYPES.includes(type)
+  );
+}
+
+function collectUnsupportedImageNames(files) {
+  return Array.from(files || [])
+    .filter((file) => !isSupportedImageFile(file))
+    .map((file) => String(file?.name || "unknown"));
 }
 
 function modeLabel(mode) {
@@ -337,7 +369,7 @@ function renderGeneratedDetail(detail) {
             <div class="thumb-row">${publishPreview || '<span class="meta-inline">目前仅封面，尚未补图</span>'}</div>
           </div>
           <div class="inline-upload">
-            <input class="inline-file" type="file" data-upload-for="${escapeHtml(detail.id)}" accept=".png,.jpg,.jpeg,.webp" multiple />
+            <input class="inline-file" type="file" data-upload-for="${escapeHtml(detail.id)}" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" multiple />
             <button class="btn btn-small btn-secondary" data-attach-id="${escapeHtml(detail.id)}">补充发布图片</button>
           </div>
           <div class="action-row">
@@ -409,9 +441,17 @@ function bindGeneratedActions(container) {
         setResult({ error: "请先为这条内容选择要补充的图片。" });
         return;
       }
+      const unsupported = collectUnsupportedImageNames(files);
+      if (unsupported.length) {
+        setResult({
+          error: "当前仅支持 JPG / PNG / WEBP 补图。手机相册若是 HEIC，请先导出成 JPG 后再上传。",
+          unsupported_files: unsupported,
+        });
+        return;
+      }
       const formData = new FormData();
       formData.append("content_id", contentId);
-      files.forEach((file) => formData.append("images", file));
+      files.forEach((file) => formData.append("images", file, file.name || "upload-image"));
       const payload = await withLoading("正在补充发布图片", "正在把你追加的图片保存到这条内容里。", () =>
         requestJson("/api/attach-publish-images", {
           method: "POST",
@@ -618,9 +658,22 @@ async function init() {
 
   document.getElementById("imageForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const formData = new FormData();
     const imageInput = document.getElementById("images");
-    Array.from(imageInput.files || []).forEach((file) => formData.append("images", file));
+    const files = Array.from(imageInput.files || []);
+    if (!files.length) {
+      setResult({ error: "请先选择至少一张图片。" });
+      return;
+    }
+    const unsupported = collectUnsupportedImageNames(files);
+    if (unsupported.length) {
+      setResult({
+        error: "当前图片文章仅支持 JPG / PNG / WEBP。手机相册若是 HEIC，请先导出或转换成 JPG 后再上传。",
+        unsupported_files: unsupported,
+      });
+      return;
+    }
+    const formData = new FormData();
+    files.forEach((file) => formData.append("images", file, file.name || "upload-image"));
     formData.append("mode", document.getElementById("mode").value);
     formData.append("angle", document.getElementById("angle").value.trim());
     formData.append("style_strength", document.getElementById("styleStrength").value);

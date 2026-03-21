@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from email.parser import BytesParser
+from email.policy import default
 import json
 import mimetypes
 import threading
@@ -384,7 +386,7 @@ class WebConsoleApp:
 
     def _parse_multipart(self, handler: BaseHTTPRequestHandler) -> tuple[dict[str, str], list[dict[str, Any]]]:
         content_type = handler.headers.get("Content-Type", "")
-        if "multipart/form-data" not in content_type:
+        if "multipart/form-data" not in content_type.lower():
             raise ValueError("Expected multipart/form-data.")
         length = int(handler.headers.get("Content-Length", "0") or 0)
         if length <= 0:
@@ -393,45 +395,32 @@ class WebConsoleApp:
             raise ValueError("Upload payload is too large.")
         raw = handler.rfile.read(length)
 
-        boundary = ""
-        for part in content_type.split(";"):
-            part = part.strip()
-            if part.startswith("boundary="):
-                boundary = part.split("=", 1)[1].strip().strip('"')
-                break
-        if not boundary:
+        message = BytesParser(policy=default).parsebytes(
+            b"Content-Type: " + content_type.encode("utf-8") + b"\r\nMIME-Version: 1.0\r\n\r\n" + raw
+        )
+        if not message.is_multipart() or not message.get_boundary():
             raise ValueError("Missing multipart boundary.")
 
         fields: dict[str, str] = {}
         files: list[dict[str, Any]] = []
-        marker = f"--{boundary}".encode("utf-8")
-        for chunk in raw.split(marker):
-            part = chunk.strip()
-            if not part or part == b"--":
+        for item in message.iter_parts():
+            name = str(item.get_param("name", header="content-disposition") or "").strip()
+            if not name:
                 continue
-            if part.endswith(b"--"):
-                part = part[:-2].strip()
-            header_blob, separator, body = part.partition(b"\r\n\r\n")
-            if not separator:
-                continue
-            headers = self._parse_part_headers(header_blob.decode("utf-8", errors="replace"))
-            disposition = headers.get("content-disposition", "")
-            params = self._parse_disposition_params(disposition)
-            name = params.get("name", "")
-            filename = params.get("filename", "")
-            if body.endswith(b"\r\n"):
-                body = body[:-2]
+            body = item.get_payload(decode=True) or b""
+            filename = str(item.get_filename() or "").strip()
             if filename:
                 files.append(
                     {
                         "field_name": name,
-                        "filename": filename,
-                        "content_type": headers.get("content-type", "application/octet-stream"),
+                        "filename": Path(filename).name or "upload.bin",
+                        "content_type": item.get_content_type() or "application/octet-stream",
                         "body": body,
                     }
                 )
-            elif name:
-                fields[name] = body.decode("utf-8", errors="replace").strip()
+            else:
+                charset = item.get_content_charset() or "utf-8"
+                fields[name] = body.decode(charset, errors="replace").strip()
         return fields, files
 
     def _parse_part_headers(self, raw_headers: str) -> dict[str, str]:
